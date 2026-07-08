@@ -4,7 +4,7 @@
   "description": "Mobile-First Expense Tracking Web Application with Google Sheets backend",
   "main": "build.js",
   "scripts": {
-    "dev": "vite src --port 3000 --open",
+    "dev": "vite --port 3000 --open",
     "build": "node build.js"
   },
   "devDependencies": {

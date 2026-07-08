@@ -28,17 +28,16 @@ A premium, minimalist, and lightweight expense tracking application designed for
 
 ```
 consumption-record/
-├── src/
-│   ├── index.html         # Main HTML layout
-│   ├── styles.css         # UI Design styles
-│   ├── app.js             # Client logic & state manager
-│   └── qr_defaults.js     # Optimized Base64 default QR code images
+├── index.html         # Main HTML layout
+├── styles.css         # UI Design styles
+├── app.js             # Client logic & state manager
+├── qr_defaults.js     # Optimized Base64 default QR code images
 ├── gas/
 │   ├── Code.js            # Apps Script database logic
 │   ├── Index.html         # Compiled single-file distribution (created by build.js)
 │   └── appsscript.json    # Google Apps Script manifest configuration
 ├── package.json           # Dev dependencies & command scripts
-├── build.js               # Merge script compiling src/ files to gas/Index.html
+├── build.js               # Merge script compiling files to gas/Index.html
 ├── README.md              # Documentation & Deployment Guide
 └── qr_defaults.json       # Temporary Base64 conversion backup
 ```

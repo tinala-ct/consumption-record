@@ -4,7 +4,7 @@ const path = require('path');
 function build() {
   console.log('Building project for Google Apps Script deployment...');
 
-  const srcDir = path.join(__dirname, 'src');
+  const srcDir = __dirname;
   const gasDir = path.join(__dirname, 'gas');
 
   // Make sure directories exist

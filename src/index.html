@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Expense Record</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="stylesheet" href="styles.css">
+  <!-- jsPDF CDN for generating PDF client-side -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+  <div id="app-container">
+    
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast">Toast Message</div>
+    
+    <!-- Spinner Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- MAIN PAGES AREA -->
+    <div class="content-area" id="content-area">
+      
+      <!-- 1. HOME TAB -->
+      <div id="tab-home" class="tab-page active">
+        <div class="dashboard-summary">
+          <div class="label">Today's Total</div>
+          <div class="amount"><span class="currency-symbol">฿</span><span id="home-today-total">0.00</span></div>
+          <div class="stats-row">
+            <span class="badge" id="home-today-count">0 txns</span>
+            <span class="badge blue" id="home-month-total">฿0.00 this month</span>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <h2>Recent Expenses</h2>
+          <button class="see-all-btn" id="btn-see-all-expenses">Search / Filter</button>
+        </div>
+
+        <div class="transaction-list" id="home-transaction-list">
+          <!-- Transaction cards will be dynamically rendered here -->
+          <div class="card" style="text-align: center; color: var(--text-muted); padding: 30px 10px;">
+            No expenses recorded today.<br>Tap the + button to add one!
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. ADD EXPENSE TAB -->
+      <div id="tab-add" class="tab-page">
+        <div class="section-header" style="margin-top: 10px;">
+          <h1 id="add-page-title">Add Expense</h1>
+        </div>
+        
+        <div class="input-amount-container">
+          <span class="currency-symbol-input">฿</span>
+          <input type="number" step="0.01" inputmode="decimal" id="add-amount" class="input-amount" placeholder="0.00">
+          
+          <div class="shortcuts-row">
+            <button type="button" class="shortcut-btn" onclick="adjustAmount(10)">+10</button>
+            <button type="button" class="shortcut-btn" onclick="adjustAmount(50)">+50</button>
+            <button type="button" class="shortcut-btn" onclick="adjustAmount(100)">+100</button>
+            <button type="button" class="shortcut-btn" onclick="adjustAmount(500)">+500</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <div class="category-grid" id="add-category-grid">
+            <!-- Category options will be rendered dynamically -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description / Note</label>
+          <input type="text" id="add-desc" class="input-text" placeholder="What did you buy?">
+        </div>
+
+        <div class="form-group">
+          <label>Payment Method</label>
+          <div class="payment-picker" id="add-payment-picker">
+            <div class="payment-method-option selected" data-value="QR Code">QR Code</div>
+            <div class="payment-method-option" data-value="Cash">Cash</div>
+            <div class="payment-method-option" data-value="Credit Card">Credit Card</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="calendar-range-grid" style="margin-bottom: 0;">
+            <div>
+              <label>Date</label>
+              <input type="date" id="add-date" class="input-text">
+            </div>
+            <div>
+              <label>Time</label>
+              <input type="time" id="add-time" class="input-text">
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top: 24px;">
+          <button class="btn btn-secondary" id="btn-cancel-add">Cancel</button>
+          <button class="btn btn-primary" id="btn-save-expense">Save Expense</button>
+        </div>
+      </div>
+
+      <!-- 3. REPORTS TAB -->
+      <div id="tab-reports" class="tab-page">
+        <div class="section-header" style="margin-top: 10px;">
+          <h1>Expense Report</h1>
+        </div>
+        <p class="subtitle">Select date range to view and export reports.</p>
+
+        <div class="calendar-range-grid">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-sub);">START DATE</label>
+            <input type="date" id="report-start-date" class="input-text">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-sub);">END DATE</label>
+            <input type="date" id="report-end-date" class="input-text">
+          </div>
+        </div>
+
+        <!-- Search / Filter inputs in Reports -->
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="report-search-keyword" class="input-text" placeholder="Search by keyword...">
+        </div>
+
+        <div class="calendar-range-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 16px;">
+          <select id="report-filter-category" class="input-text" style="padding: 10px;">
+            <option value="">All Categories</option>
+          </select>
+          <select id="report-filter-method" class="input-text" style="padding: 10px;">
+            <option value="">All Methods</option>
+            <option value="QR Code">QR Code</option>
+            <option value="Cash">Cash</option>
+            <option value="Credit Card">Credit Card</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary" id="btn-generate-report" style="margin-bottom: 20px;">Generate Report</button>
+
+        <!-- Preview Report Stats -->
+        <div id="report-preview-section" style="display: none;">
+          <h2>Report Summary</h2>
+          <div class="summary-stat-grid">
+            <div class="stat-item">
+              <div class="label">Total</div>
+              <div class="val" id="report-stat-total">฿0.00</div>
+            </div>
+            <div class="stat-item">
+              <div class="label">Count</div>
+              <div class="val" id="report-stat-count">0 txns</div>
+            </div>
+            <div class="stat-item">
+              <div class="label">Average</div>
+              <div class="val" id="report-stat-avg">฿0.00</div>
+            </div>
+            <div class="stat-item">
+              <div class="label">Highest</div>
+              <div class="val" id="report-stat-max">฿0.00</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 14px;">
+            <h3>Category Breakdown</h3>
+            <div class="category-breakdown-list" id="report-category-breakdown">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <div class="section-header" style="margin-top: 20px;">
+            <h2>Transaction Items</h2>
+          </div>
+          <div class="transaction-list" id="report-transaction-list" style="margin-bottom: 20px;">
+            <!-- Dynamic transactions list -->
+          </div>
+
+          <button class="btn btn-primary" id="btn-export-pdf" style="margin-top: 10px; background-color: var(--accent);">
+            📄 Export PDF Report
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. SETTINGS TAB -->
+      <div id="tab-settings" class="tab-page">
+        <div class="section-header" style="margin-top: 10px;">
+          <h1>Settings</h1>
+        </div>
+        
+        <!-- Google Sheet URL Link -->
+        <div class="card">
+          <div class="settings-section-title">Google Sheet Integration</div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label>Spreadsheet ID or URL</label>
+            <input type="text" id="settings-sheet-id" class="input-text" placeholder="Enter Google Sheet ID or URL">
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label>Google Apps Script Web App API URL</label>
+            <input type="text" id="settings-gas-api-url" class="input-text" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+          <button class="btn btn-secondary" id="btn-save-sheet-id" style="padding: 10px; font-size:13px;">Update Connections</button>
+        </div>
+
+        <!-- Preferences Card -->
+        <div class="card">
+          <div class="settings-section-title">Preferences</div>
+          
+          <div class="setting-row">
+            <div class="setting-row-label">Dark Mode</div>
+            <div class="setting-row-control">
+              <label class="switch">
+                <input type="checkbox" id="settings-dark-mode">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="setting-row">
+            <div class="setting-row-label">Currency Symbol</div>
+            <div class="setting-row-control">
+              <input type="text" id="settings-currency" class="input-text" style="width: 60px; padding: 6px; text-align: center;" value="฿">
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Code Settings Card -->
+        <div class="card">
+          <div class="settings-section-title">QR Code Payment (PDF)</div>
+          <div class="form-group" style="margin-top: 10px; margin-bottom: 12px;">
+            <label>Choose QR Image Source</label>
+            <select id="settings-qr-mode" class="input-text">
+              <option value="default2">Default: PromptPay Default (Blue/Green)</option>
+              <option value="default1">Alternative: CLIOX Theme (Teal)</option>
+              <option value="custom">Upload Custom QR Image</option>
+            </select>
+          </div>
+          
+          <!-- Custom QR upload widget -->
+          <div id="settings-custom-qr-container" style="display: none;">
+            <label style="font-size:12px; font-weight:600; color:var(--text-sub);">CUSTOM QR CODE IMAGE</label>
+            <div class="qr-preview-area" id="qr-upload-area">
+              <input type="file" id="qr-file-input" accept="image/*" style="display: none;">
+              <img id="qr-preview-image" class="qr-preview-img" style="display: none;">
+              <div class="qr-preview-placeholder" id="qr-preview-placeholder">
+                <span>📷</span>
+                Drag & Drop or Tap to Upload QR Code
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories Customization Card -->
+        <div class="card">
+          <div class="settings-section-title">Category Management</div>
+          <div class="settings-category-list" id="settings-category-list">
+            <!-- List of existing categories -->
+          </div>
+          
+          <!-- Add Category Form -->
+          <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px;">
+            <h4 style="font-size:13px; font-weight:600; margin-bottom:10px; color:var(--text-sub);">ADD NEW CATEGORY</h4>
+            <div class="calendar-range-grid" style="grid-template-columns: 2fr 1fr; margin-bottom:10px;">
+              <input type="text" id="new-cat-name" class="input-text" placeholder="Category Name" style="padding: 10px;">
+              <input type="text" id="new-cat-icon" class="input-text" placeholder="Icon (e.g. 🍕)" style="padding: 10px; text-align: center;">
+            </div>
+            <div class="calendar-range-grid" style="grid-template-columns: 2fr 1fr;">
+              <input type="color" id="new-cat-color" class="input-text" style="padding: 4px 10px; height: 42px;" value="#10B981">
+              <button class="btn btn-primary" id="btn-add-category" style="padding: 0; height: 42px; font-size:13px;">Add</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Status/Metadata -->
+        <div style="text-align: center; color: var(--text-muted); font-size: 11px; margin-top: 20px;">
+          Expense App v1.0.0<br>
+          Connected: <span id="settings-connection-status" style="font-weight: 600;">Mock Mode (Local)</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FLOATING ACTION BUTTON (Visible on Home Tab) -->
+    <button class="fab" id="home-fab">+</button>
+
+    <!-- BOTTOM TAB NAVIGATION -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-tab="home">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </div>
+      <div class="nav-item" data-tab="add">
+        <span class="nav-icon">➕</span>
+        <span>Add</span>
+      </div>
+      <div class="nav-item" data-tab="reports">
+        <span class="nav-icon">📄</span>
+        <span>Reports</span>
+      </div>
+      <div class="nav-item" data-tab="settings">
+        <span class="nav-icon">⚙️</span>
+        <span>Settings</span>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- DELETE TRANSACTION DIALOG (Light-Dismiss via closedby and JS fallback) -->
+  <dialog id="delete-confirm-dialog" closedby="any" aria-labelledby="dialog-title">
+    <div class="dialog-header" id="dialog-title">Delete Expense?</div>
+    <div class="dialog-body">
+      Are you sure you want to delete this expense transaction? This action cannot be undone.
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="document.getElementById('delete-confirm-dialog').close()">Cancel</button>
+      <button class="btn btn-danger" id="btn-confirm-delete">Delete</button>
+    </div>
+  </dialog>
+
+  <!-- Include App Logic -->
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+qr_defaults.json
+.system_generated/
+*.log

@@ -1,0 +1,13 @@
+{
+  "name": "consumption-record",
+  "version": "1.0.0",
+  "description": "Mobile-First Expense Tracking Web Application with Google Sheets backend",
+  "main": "build.js",
+  "scripts": {
+    "dev": "vite src --port 3000 --open",
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

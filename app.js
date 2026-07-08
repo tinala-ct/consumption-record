@@ -209,7 +209,6 @@ const elements = {
   btnExportPdf: document.getElementById('btn-export-pdf'),
   
   // Settings Tab
-  settingsSheetId: document.getElementById('settings-sheet-id'),
   settingsGasApiUrl: document.getElementById('settings-gas-api-url'),
   btnSaveSheetId: document.getElementById('btn-save-sheet-id'),
   settingsLanguage: document.getElementById('settings-language'),
@@ -1331,18 +1330,10 @@ function exportPdfReport() {
 function setupSettingsForm() {
   // Update Connections Button
   elements.btnSaveSheetId.addEventListener('click', () => {
-    const sheetVal = elements.settingsSheetId.value.trim();
     const gasApiVal = elements.settingsGasApiUrl.value.trim();
     const lang = state.settings.language || 'en';
-    
-    let sheetId = sheetVal;
-    if (sheetVal && sheetVal.includes('docs.google.com/spreadsheets')) {
-      const match = sheetVal.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      if (match) sheetId = match[1];
-    }
 
     const updates = {};
-    if (sheetId) updates.SPREADSHEET_ID = sheetId;
     updates.GAS_API_URL = gasApiVal;
 
     saveSettingsLocally(updates);
@@ -1484,9 +1475,7 @@ function loadThemeAndSettings() {
       elements.contentArea.closest('#app-container').setAttribute('data-theme', 'dark');
     }
     
-    if (settings.SPREADSHEET_ID) {
-      elements.settingsSheetId.value = settings.SPREADSHEET_ID;
-    }
+
     
     if (settings.GAS_API_URL && elements.settingsGasApiUrl) {
       elements.settingsGasApiUrl.value = settings.GAS_API_URL;

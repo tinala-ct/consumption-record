@@ -2424,7 +2424,8 @@ function exportPdfReport() {
       doc.rect(margin, y, pageW - (margin * 2), 26, 'D');
 
       const colW = (pageW - (margin * 2)) / 4;
-      const formatCurrency = (val) => `${state.settings.currency}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const pdfCurrency = (state.settings.currency === '฿') ? 'THB ' : state.settings.currency + ' ';
+      const formatCurrency = (val) => `${pdfCurrency}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
       const summaryStats = [
         { label: lang === 'th' ? 'TOTAL EXPENSES' : 'TOTAL EXPENSES', val: formatCurrency(data.total) },
@@ -2542,18 +2543,34 @@ function exportPdfReport() {
       y = 30;
 
       if (qrBase64) {
-        const qrSize = 65;
-        const xPos = (pageW - qrSize) / 2;
+        let qrW = 60;
+        let qrH = 60;
+        
+        if (state.settings.qr_code_mode === 'default1') {
+          // CLIOX QR (PNG): 3618x5427 -> 2:3 aspect ratio
+          qrW = 50;
+          qrH = 75;
+        } else if (state.settings.qr_code_mode === 'default2') {
+          // PromptPay Default (JPEG): 885x1200 -> 3:4 aspect ratio
+          qrW = 55;
+          qrH = 74.5;
+        } else {
+          // Custom upload (often square, default to 1:1)
+          qrW = 60;
+          qrH = 60;
+        }
+        
+        const xPos = (pageW - qrW) / 2;
         
         doc.setDrawColor(229, 231, 235);
         doc.setFillColor(255, 255, 255);
-        doc.rect(xPos - 5, y - 5, qrSize + 10, qrSize + 10, 'F');
-        doc.rect(xPos - 5, y - 5, qrSize + 10, qrSize + 10, 'D');
+        doc.rect(xPos - 5, y - 5, qrW + 10, qrH + 10, 'F');
+        doc.rect(xPos - 5, y - 5, qrW + 10, qrH + 10, 'D');
         
         const format = (state.settings.qr_code_mode === 'default1') ? 'PNG' : 'JPEG';
-        doc.addImage(qrBase64, format, xPos, y, qrSize, qrSize);
+        doc.addImage(qrBase64, format, xPos, y, qrW, qrH);
         
-        y += qrSize + 12;
+        y += qrH + 12;
         
         doc.setFont('Helvetica', 'bold');
         doc.setFontSize(12);

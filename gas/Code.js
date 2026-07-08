@@ -2,7 +2,7 @@ const SPREADSHEET_ID = '14vA-VMYjO-G-ysHJ6kcUEbA3UB6dk3vm2SlC_txSzCU';
 
 function doGet(e) {
   // Check if it's an API action request
-  if (e.parameter.action) {
+  if (e && e.parameter && e.parameter.action) {
     return handleCorsResponse(handleApiRequest(e));
   }
   
@@ -26,6 +26,9 @@ function handleCorsResponse(result) {
 }
 
 function handleApiRequest(e) {
+  if (!e) {
+    return { success: false, error: 'No request context provided' };
+  }
   let action = '';
   let data = {};
   

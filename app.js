@@ -62,7 +62,13 @@ const TRANSLATIONS = {
     nav_home: "Home",
     nav_add: "Add",
     nav_reports: "Reports",
-    nav_settings: "Settings"
+    nav_settings: "Settings",
+    settings_cycle_title: "Billing Cycle",
+    settings_last_cleared: "Last Cleared:",
+    settings_clear_bill_btn: "Clear Active Bills",
+    settings_clear_confirm: "Are you sure you want to clear all active expenses and start a new billing cycle? This will archive all current expenses.",
+    settings_clear_success: "Billing cycle cleared successfully!",
+    settings_never_cleared: "Never"
   },
   th: {
     home_today_total: "ยอดใช้จ่ายวันนี้",
@@ -124,7 +130,13 @@ const TRANSLATIONS = {
     nav_home: "หน้าหลัก",
     nav_add: "เพิ่ม",
     nav_reports: "รายงาน",
-    nav_settings: "ตั้งค่า"
+    nav_settings: "ตั้งค่า",
+    settings_cycle_title: "รอบบัญชีค่าใช้จ่าย",
+    settings_last_cleared: "เคลียร์บิลล่าสุดเมื่อ:",
+    settings_clear_bill_btn: "เคลียร์บิลรายจ่ายปัจจุบัน",
+    settings_clear_confirm: "คุณแน่ใจหรือไม่ว่าต้องการเคลียร์บิลรายจ่ายปัจจุบันทั้งหมดเพื่อเริ่มรอบใหม่? รายการจ่ายในปัจจุบันจะถูกจัดเก็บโดยไม่นำมาคำนวณอีก",
+    settings_clear_success: "เคลียร์บิลรายจ่ายรอบปัจจุบันเรียบร้อยแล้ว!",
+    settings_never_cleared: "ยังไม่เคยเคลียร์บิล"
   }
 };
 
@@ -211,6 +223,8 @@ const elements = {
   // Settings Tab
   settingsGasApiUrl: document.getElementById('settings-gas-api-url'),
   btnSaveSheetId: document.getElementById('btn-save-sheet-id'),
+  settingsLastClearedDate: document.getElementById('settings-last-cleared-date'),
+  btnClearBill: document.getElementById('btn-clear-bill'),
   settingsLanguage: document.getElementById('settings-language'),
   settingsDarkMode: document.getElementById('settings-dark-mode'),
   settingsCurrency: document.getElementById('settings-currency'),
@@ -319,6 +333,10 @@ function switchTab(tabName) {
   }
 }
 
+function getActiveExpenses() {
+  return state.expenses.filter(e => !e['Cleared At']);
+}
+
 function formatDateString(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -417,6 +435,25 @@ function runMockApi(action, data) {
             const newSettings = { ...currentSettings, ...data };
             localStorage.setItem('settings', JSON.stringify(newSettings));
             resolve({ success: true });
+            break;
+            
+          case 'clearBill':
+            const now = new Date();
+            const nowStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+            
+            const clearedExpenses = storedExpenses.map(e => {
+              if (!e['Cleared At']) {
+                e['Cleared At'] = nowStr;
+              }
+              return e;
+            });
+            localStorage.setItem('expenses', JSON.stringify(clearedExpenses));
+            
+            const localSettings = storedSettings || state.settings;
+            localSettings.last_cleared_at = nowStr;
+            localStorage.setItem('settings', JSON.stringify(localSettings));
+            
+            resolve({ success: true, lastClearedAt: nowStr });
             break;
             
           default:
@@ -559,6 +596,20 @@ function renderAll() {
   renderCategoryGrid();
   renderSettingsCategories();
   updateQRUploadSection();
+  renderBillingCycleStatus();
+}
+
+function renderBillingCycleStatus() {
+  if (!elements.settingsLastClearedDate) return;
+  
+  const lang = state.settings.language || 'en';
+  const lastCleared = state.settings.last_cleared_at;
+  
+  if (lastCleared) {
+    elements.settingsLastClearedDate.textContent = lastCleared;
+  } else {
+    elements.settingsLastClearedDate.textContent = TRANSLATIONS[lang].settings_never_cleared;
+  }
 }
 
 function updateCurrencySymbols() {
@@ -573,7 +624,7 @@ function updateCurrencySymbols() {
 // Render Dashboard (Today's Summary)
 function renderDashboard() {
   const todayStr = formatDateString(new Date());
-  const todayExpenses = state.expenses.filter(e => e.Date === todayStr);
+  const todayExpenses = getActiveExpenses().filter(e => e.Date === todayStr);
   const lang = state.settings.language || 'en';
   
   const todayTotal = todayExpenses.reduce((sum, e) => sum + parseFloat(e.Amount || 0), 0);
@@ -586,7 +637,7 @@ function renderDashboard() {
 
   // Month Total
   const currentYearMonth = todayStr.substring(0, 7); // "YYYY-MM"
-  const monthExpenses = state.expenses.filter(e => e.Date.startsWith(currentYearMonth));
+  const monthExpenses = getActiveExpenses().filter(e => e.Date.startsWith(currentYearMonth));
   const monthTotal = monthExpenses.reduce((sum, e) => sum + parseFloat(e.Amount || 0), 0);
   
   const monthLabel = lang === 'th' ? `เดือนนี้ใช้จ่าย ฿${monthTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${state.settings.currency}${monthTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} this month`;
@@ -597,7 +648,7 @@ function renderDashboard() {
 function renderRecentExpenses() {
   elements.homeTxnList.innerHTML = '';
   
-  const recent = state.expenses.slice(0, 10);
+  const recent = getActiveExpenses().slice(0, 10);
   const lang = state.settings.language || 'en';
   
   if (recent.length === 0) {
@@ -953,7 +1004,7 @@ function generateReport() {
   const methodFilter = elements.reportFilterMethod.value;
   const keywordFilter = elements.reportSearchKeyword.value.toLowerCase().trim();
 
-  const filtered = state.expenses.filter(exp => {
+  const filtered = getActiveExpenses().filter(exp => {
     const expDate = new Date(exp.Date + 'T00:00:00');
     if (expDate < startDate || expDate > endDate) return false;
     if (catFilter && exp.Category !== catFilter) return false;
@@ -1416,6 +1467,31 @@ function setupSettingsForm() {
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
       handleQRFileSelect(file);
+    }
+  });
+
+  elements.btnClearBill.addEventListener('click', () => {
+    const lang = state.settings.language || 'en';
+    const confirmMsg = TRANSLATIONS[lang].settings_clear_confirm;
+    
+    if (confirm(confirmMsg)) {
+      showLoading(true);
+      
+      callBackend('clearBill')
+        .then(result => {
+          if (result && result.success) {
+            state.settings.last_cleared_at = result.lastClearedAt;
+            showToast(TRANSLATIONS[lang].settings_clear_success);
+            fetchData();
+          } else {
+            throw new Error(result.error || 'Failed to clear');
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          showToast('Failed to clear bill: ' + err.message, false);
+          showLoading(false);
+        });
     }
   });
 

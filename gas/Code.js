@@ -61,6 +61,8 @@ function handleApiRequest(e) {
         return getSettings();
       case 'saveSettings':
         return saveSettings(data);
+      case 'clearBill':
+        return clearBill();
       default:
         return { success: false, error: 'Unknown action: ' + action };
     }
@@ -351,4 +353,44 @@ function saveSettings(settings) {
   }
   
   return { success: true };
+}
+
+function clearBill() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName('Expenses');
+  if (!sheet) {
+    initDatabase();
+    sheet = ss.getSheetByName('Expenses');
+  }
+  
+  // 1. Ensure 'Cleared At' header exists
+  let headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  let clearedAtColIdx = headers.indexOf('Cleared At');
+  
+  if (clearedAtColIdx === -1) {
+    // Append 'Cleared At' header
+    sheet.getRange(1, headers.length + 1).setValue('Cleared At').setFontWeight('bold');
+    headers.push('Cleared At');
+    clearedAtColIdx = headers.length - 1;
+  }
+  
+  const colNumber = clearedAtColIdx + 1; // 1-indexed column number
+  const data = sheet.getDataRange().getValues();
+  const now = new Date();
+  const nowStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  
+  // Write the cleared timestamp to the 'Cleared At' column for all rows that don't have it
+  // Row indices are 1-indexed; index 1 is headers, so start from 2
+  for (let i = 2; i <= data.length; i++) {
+    const row = data[i - 1];
+    const clearedVal = row[clearedAtColIdx];
+    if (!clearedVal) {
+      sheet.getRange(i, colNumber).setValue(nowStr);
+    }
+  }
+  
+  // 2. Update settings key 'last_cleared_at'
+  saveSettings({ last_cleared_at: nowStr });
+  
+  return { success: true, lastClearedAt: nowStr };
 }

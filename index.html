@@ -198,6 +198,16 @@
           <button class="btn btn-secondary" id="btn-save-sheet-id" style="padding: 10px; font-size:13px;" data-i18n="settings_update_btn">Update Connections</button>
         </div>
 
+        <!-- Billing Cycle Card -->
+        <div class="card">
+          <div class="settings-section-title" data-i18n="settings_cycle_title">Billing Cycle</div>
+          <div style="font-size: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span data-i18n="settings_last_cleared" style="color: var(--text-sub);">Last Cleared:</span>
+            <span id="settings-last-cleared-date" style="font-weight: bold; color: var(--text-main);">Never</span>
+          </div>
+          <button class="btn btn-primary" id="btn-clear-bill" style="padding: 10px; font-size:13px; background-color: #EF4444; border-color: #EF4444; width: 100%;" data-i18n="settings_clear_bill_btn">Clear Active Bills</button>
+        </div>
+
         <!-- Preferences Card -->
         <div class="card">
           <div class="settings-section-title" data-i18n="settings_pref_title">Preferences</div>

@@ -146,6 +146,8 @@ const DEFAULT_CATEGORIES_TH = [
   { id: 'other', name: 'อื่นๆ', icon: '📦', color: '#6B7280' }
 ];
 
+const DEFAULT_GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzsR9LTOl0GlkpA-lgM4qZeUUkFeXLxrwBwEUj2uNizfHkOdiIDiawDmifw85_tfyBg/exec';
+
 // Application State
 let state = {
   expenses: [],
@@ -337,7 +339,11 @@ function callBackend(action, data = {}) {
   }
   
   const settingsStr = localStorage.getItem('settings');
-  const gasApiUrl = settingsStr ? JSON.parse(settingsStr).GAS_API_URL : '';
+  let gasApiUrl = settingsStr ? JSON.parse(settingsStr).GAS_API_URL : '';
+  
+  if (!gasApiUrl) {
+    gasApiUrl = DEFAULT_GAS_API_URL;
+  }
   
   if (gasApiUrl) {
     return fetch(`${gasApiUrl}?action=${action}`, {
@@ -427,19 +433,29 @@ function runMockApi(action, data) {
 // Sync connection status in Settings footer
 function syncConnectionStatus() {
   const settingsStr = localStorage.getItem('settings');
-  const gasApiUrl = settingsStr ? JSON.parse(settingsStr).GAS_API_URL : '';
+  let gasApiUrl = settingsStr ? JSON.parse(settingsStr).GAS_API_URL : '';
+  
+  if (!gasApiUrl) {
+    gasApiUrl = DEFAULT_GAS_API_URL;
+  }
+  
   const lang = state.settings.language || 'en';
 
   if (state.isGAS) {
     elements.connectionStatus.textContent = TRANSLATIONS[lang].settings_conn_live;
     elements.connectionStatus.style.color = 'var(--primary)';
   } else if (gasApiUrl) {
-    elements.connectionStatus.textContent = TRANSLATIONS[lang].settings_conn_api;
+    elements.connectionStatus.textContent = TRANVAL_API_STATUS_CON(lang);
     elements.connectionStatus.style.color = 'var(--primary)';
   } else {
     elements.connectionStatus.textContent = TRANSLATIONS[lang].settings_conn_mock;
     elements.connectionStatus.style.color = 'var(--text-sub)';
   }
+}
+
+// Helper to get api text status
+function TRANVAL_API_STATUS_CON(lang) {
+  return TRANSLATIONS[lang].settings_conn_api;
 }
 
 // Translate Page DOM Elements

@@ -146,7 +146,7 @@ const DEFAULT_CATEGORIES_TH = [
   { id: 'other', name: 'อื่นๆ', icon: '📦', color: '#6B7280' }
 ];
 
-const DEFAULT_GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzsR9LTOl0GlkpA-lgM4qZeUUkFeXLxrwBwEUj2uNizfHkOdiIDiawDmifw85_tfyBg/exec';
+const DEFAULT_GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxd5jvuacY-juFfNoob-gkzojIMArRb6CLWoCWvtx9x6AMBXyk9zRPFYEfzPLIVPucq/exec';
 
 // Application State
 let state = {
